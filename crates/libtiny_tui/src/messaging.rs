@@ -61,9 +61,6 @@ impl Timestamp {
     /// The width of a timestamp plus a space.
     pub(crate) const WIDTH: usize = 6;
 
-    /// Spaces for a timestamp slot in aligned layout.
-    pub(crate) const BLANK: &'static str = "      ";
-
     fn stamp(&self) -> String {
         let now = chrono::Local::now();
         if self.month == now.month() && self.day == now.day() {
@@ -76,6 +73,9 @@ impl Timestamp {
                 self.month, self.day, self.hour, self.min
             )
         }
+    }
+    fn spacer(&self) -> String {
+        self.stamp().chars().map(|_| ' ').collect()
     }
 }
 
@@ -262,8 +262,7 @@ impl MessagingUI {
             if ts_ != ts {
                 self.msg_area.add_text(&ts.stamp(), SegStyle::Timestamp);
             } else if self.msg_area.layout().is_aligned() {
-                self.msg_area
-                    .add_text(Timestamp::BLANK, SegStyle::Timestamp);
+                self.msg_area.add_text(&ts.spacer(), SegStyle::Timestamp);
             }
         } else {
             self.msg_area.add_text(&ts.stamp(), SegStyle::Timestamp);
