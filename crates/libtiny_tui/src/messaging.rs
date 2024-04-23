@@ -1,4 +1,4 @@
-use chrono::Timelike;
+use chrono::{Datelike, Timelike};
 use termbox_simple::Termbox;
 
 use std::convert::From;
@@ -46,6 +46,8 @@ pub(crate) const MSG_NICK_SUFFIX_LEN: usize = 2;
 /// Like `time::chrono::DateTime<chrono::Local>`, but we only care about hour and minute parts.
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub(crate) struct Timestamp {
+    month: u32,
+    day: u32,
     hour: u32,
     min: u32,
 }
@@ -63,13 +65,25 @@ impl Timestamp {
     pub(crate) const BLANK: &'static str = "      ";
 
     fn stamp(&self) -> String {
-        format!("{:02}:{:02} ", self.hour, self.min)
+        let now = chrono::Local::now();
+        if self.month == now.month() && self.day == now.day() {
+            format!("{:02}:{:02} ", self.hour, self.min)
+        } else if self.month == now.month() {
+            format!("({}) {:02}:{:02} ", self.day, self.hour, self.min)
+        } else {
+            format!(
+                "({}-{}) {:02}:{:02} ",
+                self.month, self.day, self.hour, self.min
+            )
+        }
     }
 }
 
 impl From<chrono::DateTime<chrono::Local>> for Timestamp {
     fn from(tm: chrono::DateTime<chrono::Local>) -> Timestamp {
         Timestamp {
+            month: tm.month(),
+            day: tm.day(),
             hour: tm.hour(),
             min: tm.minute(),
         }
