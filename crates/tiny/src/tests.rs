@@ -110,6 +110,7 @@ fn test_privmsg_from_user_without_user_or_host_part_issue_247() {
 
             // Join a channel to test msg sent to channel
             let join = Msg {
+                tags: None,
                 pfx: Some(Pfx::User {
                     nick: "osa1".to_owned(),
                     user: "a@b".to_owned(),
@@ -123,6 +124,7 @@ fn test_privmsg_from_user_without_user_or_host_part_issue_247() {
 
             // Send a PRIVMSG to the channel
             let chan_msg = Msg {
+                tags: None,
                 pfx: Some(Pfx::Ambiguous("tiny_test_user".to_owned())),
                 cmd: Cmd::PRIVMSG {
                     target: MsgTarget::Chan(ChanName::new("#chan".to_owned())),
@@ -139,6 +141,7 @@ fn test_privmsg_from_user_without_user_or_host_part_issue_247() {
 
             // Send a PRIVMSG to current nick
             let msg = Msg {
+                tags: None,
                 pfx: Some(Pfx::Ambiguous("tiny_test_user".to_owned())),
                 cmd: Cmd::PRIVMSG {
                     target: MsgTarget::User("osa1".to_owned()),
@@ -221,6 +224,7 @@ fn test_bouncer_relay_issue_271() {
                 .unwrap();
 
             let msg = Msg {
+                tags: None,
                 pfx: Some(Pfx::User {
                     nick: "osa1-soju".to_owned(),
                     user: "osa1-soju@127.0.0.1".to_owned(),
@@ -285,6 +289,7 @@ fn test_privmsg_targetmask_issue_278() {
 
             snd_conn_ev
                 .send(client::Event::Msg(Msg {
+                    tags: None,
                     pfx: Some(Pfx::User {
                         nick: "tiny_test_user".to_owned(),
                         user: "e@a/b/c.d".to_owned(),

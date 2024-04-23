@@ -16,6 +16,7 @@ desktop-notifications = ["libtiny_tui/desktop-notifications"]
 desktop-notifications-static-linking = ["libtiny_tui/desktop-notifications", "libtiny_tui/desktop-notifications-static-linking"]
 
 [dependencies]
+chrono = { version = "0.4.38", features = ["clock"] }
 dirs = "4.0"
 env_logger = { version = "0.9", default-features = false }
 libtiny_client = { path = "../libtiny_client", default-features = false }
@@ -27,7 +28,6 @@ log = "0.4"
 serde = { version = "1.0.196", features = ["derive"] }
 serde_yaml = "0.8"
 shell-words = "1.1.0"
-time = "0.1"
 tokio = { version = "1.36", default-features = false, features = [] }
 tokio-stream = { version = "0.1", features = [] }
 

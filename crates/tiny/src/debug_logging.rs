@@ -20,6 +20,9 @@ use std::sync::Mutex;
 
 pub(crate) fn init(path: PathBuf) {
     let filter = filter::Builder::from_env("TINY_LOG").build();
+    let filter = filter::Builder::new()
+        .filter_level(log::LevelFilter::Debug)
+        .build();
     let sink = Mutex::new(LazyFile::new(path));
 
     log::set_max_level(filter.filter());
@@ -45,7 +48,7 @@ impl Log for Logger {
             let _ = writeln!(
                 file,
                 "[{}] {} [{}:{}] {}",
-                time::strftime("%F %T", &time::now()).unwrap(),
+                chrono::Utc::now(),
                 record.level(),
                 record.file().unwrap_or_default(),
                 record.line().unwrap_or_default(),
@@ -77,11 +80,8 @@ impl LazyFile {
                 match OpenOptions::new().create(true).append(true).open(path) {
                     Ok(mut file) => {
                         // Same format used in libtiny_logger
-                        let _ = writeln!(
-                            file,
-                            "\n*** Logging started at {}\n",
-                            time::strftime("%Y-%m-%d %H:%M:%S", &time::now()).unwrap()
-                        );
+                        let _ =
+                            writeln!(file, "\n*** Logging started at {}\n", chrono::Utc::now(),);
                         file
                     }
                     Err(_) => {

@@ -282,6 +282,7 @@ impl StateInner {
         snd_irc_msg: &mut Sender<String>,
     ) {
         let Msg {
+            ref tags,
             ref pfx,
             ref mut cmd,
         } = msg;
@@ -405,6 +406,7 @@ impl StateInner {
                     let channel = ChanNameRef::new(channel);
                     snd_ev
                         .try_send(Event::Msg(wire::Msg {
+                            tags: None,
                             pfx: pfx.clone(),
                             cmd: wire::Cmd::PRIVMSG {
                                 ctcp: None,
@@ -639,6 +641,8 @@ impl StateInner {
                             } else {
                                 warn!("SASL AUTH not set but got SASL ACK");
                             }
+                        } else {
+                            snd_irc_msg.try_send(wire::cap_end()).unwrap();
                         }
                     }
                     "NAK" => {
@@ -646,6 +650,9 @@ impl StateInner {
                     }
                     "LS" => {
                         self.introduce(snd_irc_msg);
+                        snd_irc_msg
+                            .try_send(wire::cap_req(&["server-time"]))
+                            .unwrap();
                         if params.iter().any(|cap| cap == "sasl") {
                             snd_irc_msg.try_send(wire::cap_req(&["sasl"])).unwrap();
                             // Will wait for CAP ... ACK from server before authentication.

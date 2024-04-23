@@ -6,4 +6,6 @@ edition = "2021"
 description = "IRC message parsing and generation"
 
 [dependencies]
+chrono = { version = "0.4.38", features = ["clock"] }
+itertools = "0.12.1"
 libtiny_common = { path = "../libtiny_common" }

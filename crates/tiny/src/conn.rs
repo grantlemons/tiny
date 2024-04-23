@@ -10,6 +10,7 @@ use libtiny_wire as wire;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
+use wire::Tag;
 
 pub(crate) trait Client {
     fn get_serv_name(&self) -> &str;
@@ -47,6 +48,7 @@ pub(crate) async fn task(
 
 fn handle_conn_ev(ui: &UI, client: &dyn Client, ev: libtiny_client::Event) {
     use libtiny_client::Event::*;
+    let ts = chrono::Utc::now();
     match ev {
         ResolvingHost => {
             ui.add_client_msg(
@@ -79,7 +81,7 @@ fn handle_conn_ev(ui: &UI, client: &dyn Client, ev: libtiny_client::Event) {
                     "Disconnected. Will try to reconnect in {} seconds.",
                     libtiny_client::RECONNECT_SECS
                 ),
-                time::now(),
+                ts,
                 &MsgTarget::AllServTabs { serv },
             );
             ui.clear_nicks(serv);
@@ -87,7 +89,7 @@ fn handle_conn_ev(ui: &UI, client: &dyn Client, ev: libtiny_client::Event) {
         IoErr(err) => {
             ui.add_err_msg(
                 &format!("Connection error: {}", err),
-                time::now(),
+                ts,
                 &MsgTarget::AllServTabs {
                     serv: client.get_serv_name(),
                 },
@@ -96,7 +98,7 @@ fn handle_conn_ev(ui: &UI, client: &dyn Client, ev: libtiny_client::Event) {
         ConnectionClosed => {
             ui.add_err_msg(
                 "Connection closed on the remote end",
-                time::now(),
+                ts,
                 &MsgTarget::AllServTabs {
                     serv: client.get_serv_name(),
                 },
@@ -105,7 +107,7 @@ fn handle_conn_ev(ui: &UI, client: &dyn Client, ev: libtiny_client::Event) {
         TlsErr(err) => {
             ui.add_err_msg(
                 &format!("TLS error: {}", err),
-                time::now(),
+                ts,
                 &MsgTarget::AllServTabs {
                     serv: client.get_serv_name(),
                 },
@@ -114,7 +116,7 @@ fn handle_conn_ev(ui: &UI, client: &dyn Client, ev: libtiny_client::Event) {
         CantResolveAddr => {
             ui.add_err_msg(
                 "Can't resolve address",
-                time::now(),
+                ts,
                 &MsgTarget::AllServTabs {
                     serv: client.get_serv_name(),
                 },
@@ -129,7 +131,7 @@ fn handle_conn_ev(ui: &UI, client: &dyn Client, ev: libtiny_client::Event) {
         WireError(err) => {
             ui.add_err_msg(
                 &format!("Wire protocol error: {}", err),
-                time::now(),
+                ts,
                 &MsgTarget::Server {
                     serv: client.get_serv_name(),
                 },
@@ -149,8 +151,21 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
     use wire::Cmd::*;
     use wire::Pfx::*;
 
-    let wire::Msg { pfx, cmd } = msg;
-    let ts = time::now();
+    let wire::Msg { tags, pfx, cmd } = msg;
+    let ts: chrono::DateTime<chrono::Utc> = tags
+        .map(|tags| {
+            tags.into_iter()
+                .filter_map(|t| {
+                    if let Tag::Time(time) = t {
+                        Some(time)
+                    } else {
+                        None
+                    }
+                })
+                .next()
+        })
+        .flatten()
+        .unwrap_or(chrono::Utc::now());
     let serv = client.get_serv_name();
     match cmd {
         PRIVMSG {
@@ -331,12 +346,11 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                 ui.new_chan_tab(serv, &chan);
             } else {
                 let nick = wire::drop_nick_prefix(&nick);
-                let ts = Some(time::now());
-                ui.add_nick(nick, ts, &MsgTarget::Chan { serv, chan: &chan });
+                ui.add_nick(nick, Some(ts), &MsgTarget::Chan { serv, chan: &chan });
                 // Also update the private message tab if it exists
                 // Nothing will be shown if the user already known to be online by the tab
                 if ui.user_tab_exists(serv, nick) {
-                    ui.add_nick(nick, ts, &MsgTarget::User { serv, nick });
+                    ui.add_nick(nick, Some(ts), &MsgTarget::User { serv, nick });
                 }
                 ui.set_tab_style(TabStyle::JoinOrPart, &MsgTarget::Chan { serv, chan: &chan })
             }
@@ -355,11 +369,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                 }
             };
             if nick != client.get_nick() {
-                ui.remove_nick(
-                    &nick,
-                    Some(time::now()),
-                    &MsgTarget::Chan { serv, chan: &chan },
-                );
+                ui.remove_nick(&nick, Some(ts), &MsgTarget::Chan { serv, chan: &chan });
                 ui.set_tab_style(TabStyle::JoinOrPart, &MsgTarget::Chan { serv, chan: &chan })
             }
         }
@@ -378,10 +388,10 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
             };
 
             for chan in &chans {
-                ui.remove_nick(nick, Some(time::now()), &MsgTarget::Chan { serv, chan });
+                ui.remove_nick(nick, Some(ts), &MsgTarget::Chan { serv, chan });
             }
             if ui.user_tab_exists(serv, nick) {
-                ui.remove_nick(nick, Some(time::now()), &MsgTarget::User { serv, nick });
+                ui.remove_nick(nick, Some(ts), &MsgTarget::User { serv, nick });
             }
         }
 
@@ -399,18 +409,13 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
             };
 
             for chan in &chans {
-                ui.rename_nick(
-                    &old_nick,
-                    &nick,
-                    time::now(),
-                    &MsgTarget::Chan { serv, chan },
-                );
+                ui.rename_nick(&old_nick, &nick, ts, &MsgTarget::Chan { serv, chan });
             }
             if ui.user_tab_exists(serv, &old_nick) {
                 ui.rename_nick(
                     &old_nick,
                     &nick,
-                    time::now(),
+                    ts,
                     &MsgTarget::User {
                         serv,
                         nick: &old_nick,
@@ -426,7 +431,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
             if client.is_nick_accepted() {
                 ui.add_err_msg(
                     "Nickname is already in use",
-                    time::now(),
+                    ts,
                     &MsgTarget::AllServTabs { serv },
                 );
             }
@@ -437,11 +442,11 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
         }
 
         ERROR { msg } => {
-            ui.add_err_msg(&msg, time::now(), &MsgTarget::AllServTabs { serv });
+            ui.add_err_msg(&msg, ts, &MsgTarget::AllServTabs { serv });
         }
 
         TOPIC { chan, topic } => {
-            ui.set_topic(&topic, time::now(), serv, &chan);
+            ui.set_topic(&topic, ts, serv, &chan);
         }
 
         CAP {
@@ -454,7 +459,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                     let msg_target = MsgTarget::Server { serv };
                     ui.add_err_msg(
                         "Server rejected using SASL authenication capability",
-                        time::now(),
+                        ts,
                         &msg_target,
                     );
                 }
@@ -464,12 +469,15 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                     let msg_target = MsgTarget::Server { serv };
                     ui.add_err_msg(
                         "Server does not support SASL authenication",
-                        time::now(),
+                        ts,
                         &msg_target,
                     );
                 }
             }
-            "ACK" => {}
+            "ACK" => {
+                let msg_target = MsgTarget::Server { serv };
+                ui.add_msg(&params.join(", "), ts, &msg_target);
+            }
             cmd => {
                 debug!("Ignoring CAP subcommand {}: params={:?}", cmd, params);
             }
@@ -492,17 +500,17 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
             ) && n_params == 2
             {
                 let msg = &params[1];
-                ui.add_msg(msg, time::now(), &MsgTarget::Server { serv });
+                ui.add_msg(msg, ts, &MsgTarget::Server { serv });
             } else if n == 4 // RPL_MYINFO
                     || n == 5 // RPL_BOUNCE
                     || (252..=254).contains(&n)
             // RPL_LUSEROP, RPL_LUSERUNKNOWN, RPL_LUSERCHANNELS
             {
                 let msg = params.into_iter().collect::<Vec<String>>().join(" ");
-                ui.add_msg(&msg, time::now(), &MsgTarget::Server { serv });
+                ui.add_msg(&msg, ts, &MsgTarget::Server { serv });
             } else if (n == 265 || n == 266 || n == 250) && n_params > 0 {
                 let msg = &params[n_params - 1];
-                ui.add_msg(msg, time::now(), &MsgTarget::Server { serv });
+                ui.add_msg(msg, ts, &MsgTarget::Server { serv });
             }
             // RPL_TOPIC
             else if n == 332 && (n_params == 3 || n_params == 2) {
@@ -510,7 +518,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                 // one being our nick).
                 let chan = &params[n_params - 2];
                 let topic = &params[n_params - 1];
-                ui.set_topic(topic, time::now(), serv, ChanNameRef::new(chan));
+                ui.set_topic(topic, ts, serv, ChanNameRef::new(chan));
             }
             // RPL_NAMREPLY: List of users in a channel
             else if n == 353 && n_params > 3 {
@@ -549,14 +557,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                 match pfx {
                     Some(Server(msg_serv)) | Some(Ambiguous(msg_serv)) => {
                         let msg_target = MsgTarget::Server { serv };
-                        ui.add_privmsg(
-                            &msg_serv,
-                            &params.join(" "),
-                            time::now(),
-                            &msg_target,
-                            false,
-                            false,
-                        );
+                        ui.add_privmsg(&msg_serv, &params.join(" "), ts, &msg_target, false, false);
                         ui.set_tab_style(TabStyle::NewMsg, &msg_target);
                     }
                     Some(User { .. }) | None => {
@@ -572,14 +573,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
         Other { cmd, params } => match pfx {
             Some(Server(msg_serv)) => {
                 let msg_target = MsgTarget::Server { serv };
-                ui.add_privmsg(
-                    &msg_serv,
-                    &params.join(" "),
-                    time::now(),
-                    &msg_target,
-                    false,
-                    false,
-                );
+                ui.add_privmsg(&msg_serv, &params.join(" "), ts, &msg_target, false, false);
                 ui.set_tab_style(TabStyle::NewMsg, &msg_target);
             }
             Some(User { .. }) | Some(Ambiguous(_)) | None => {

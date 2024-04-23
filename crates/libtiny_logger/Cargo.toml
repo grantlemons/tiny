@@ -6,7 +6,7 @@ description = "Implements a logging UI for tiny"
 edition = "2021"
 
 [dependencies]
+chrono = { version = "0.4.38", features = ["clock"] }
 libtiny_common = { path = "../libtiny_common" }
 libtiny_wire = { path = "../libtiny_wire" }
 log = "0.4"
-time = "0.1"

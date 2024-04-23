@@ -1,8 +1,7 @@
+use chrono::Timelike;
 use termbox_simple::Termbox;
 
 use std::convert::From;
-
-use time::{self, Tm};
 
 use crate::config::Colors;
 use crate::exit_dialogue::ExitDialogue;
@@ -44,11 +43,11 @@ pub(crate) struct MessagingUI {
 /// Length of ": " suffix of nicks in messages
 pub(crate) const MSG_NICK_SUFFIX_LEN: usize = 2;
 
-/// Like `time::Tm`, but we only care about hour and minute parts.
+/// Like `time::chrono::DateTime<chrono::Utc>`, but we only care about hour and minute parts.
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub(crate) struct Timestamp {
-    hour: i32,
-    min: i32,
+    hour: u32,
+    min: u32,
 }
 
 // 80 characters. TODO: We need to make sure we don't need more whitespace than that. We should
@@ -68,11 +67,11 @@ impl Timestamp {
     }
 }
 
-impl From<Tm> for Timestamp {
-    fn from(tm: Tm) -> Timestamp {
+impl From<chrono::DateTime<chrono::Utc>> for Timestamp {
+    fn from(tm: chrono::DateTime<chrono::Utc>) -> Timestamp {
         Timestamp {
-            hour: tm.tm_hour,
-            min: tm.tm_min,
+            hour: tm.hour(),
+            min: tm.minute(),
         }
     }
 }

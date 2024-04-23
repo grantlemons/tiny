@@ -9,6 +9,7 @@ pub mod formatting;
 
 use std::str;
 
+use itertools::Itertools;
 use libtiny_common::{ChanName, ChanNameRef};
 
 pub fn pass(pass: &str) -> String {
@@ -110,6 +111,12 @@ pub fn authenticate(msg: &str) -> String {
 // matching explicitly. See the commented-out code below.
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Tag {
+    Time(chrono::DateTime<chrono::Utc>),
+    Unimplemented(String),
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Pfx {
     /// Sender is a server.
     Server(String),
@@ -175,6 +182,43 @@ fn parse_pfx(pfx: &str) -> Pfx {
     }
 }
 
+fn translate_tag_esc_chars(s: &str) -> String {
+    s.chars()
+        .tuple_windows()
+        .map(|(a, b)| {
+            if a == '\\' {
+                match b {
+                    ':' => return ";".to_string(),
+                    's' => return " ".to_string(),
+                    '\\' => return r"\".to_string(),
+                    '\r' => return "\r".to_string(),
+                    '\n' => return "\n".to_string(),
+                    _ => return format!("{}{}", a, b),
+                }
+            } else {
+                format!("{}{}", a, b)
+            }
+        })
+        .collect()
+}
+
+fn parse_tags(tags: &str) -> Vec<Tag> {
+    tags.split(';')
+        .map(translate_tag_esc_chars)
+        .map(|st| {
+            let idx = st.find('=').unwrap();
+            match &st[..idx] {
+                "time" => Tag::Time(
+                    chrono::DateTime::parse_from_rfc3339(&st[idx..])
+                        .unwrap()
+                        .to_utc(),
+                ),
+                s => Tag::Unimplemented(s.to_owned()),
+            }
+        })
+        .collect()
+}
+
 /// Target of a message
 ///
 /// Masks are not parsed, as rules for masks are not clear in RFC 2818 (for example, `#x.y` can be
@@ -191,6 +235,7 @@ pub enum MsgTarget {
 /// An IRC message
 #[derive(Debug, PartialEq, Eq)]
 pub struct Msg {
+    pub tags: Option<Vec<Tag>>,
     /// Sender of a message. According to RFC 2812 it's optional:
     ///
     /// > If the prefix is missing from the message, it is assumed to have originated from the
@@ -330,19 +375,28 @@ pub fn parse_irc_msg(buf: &mut Vec<u8>) -> Option<Result<Msg, String>> {
 
 // NB. 'msg' does not contain '\r\n' suffix.
 fn parse_one_message(mut msg: &str) -> Result<Msg, String> {
-    let pfx: Option<Pfx> = {
-        if let Some(':') = msg.chars().next() {
-            // parse prefix
-            let ws_idx = msg.find(' ').ok_or(format!(
-                "Can't find prefix terminator (' ') in msg: {:?}",
-                msg
-            ))?;
-            let pfx = &msg[1..ws_idx]; // consume ':'
-            msg = &msg[ws_idx + 1..]; // consume ' '
-            Some(parse_pfx(pfx))
-        } else {
-            None
-        }
+    let tags: Option<Vec<Tag>> = if let Some('@') = msg.chars().next() {
+        let ws_idx = msg.find(' ').ok_or(format!(
+            "can't find prefix terminator (' ') in msg: {:?}",
+            msg
+        ))?;
+        let tag_str = &msg[1..ws_idx]; // consume ':'
+        msg = &msg[ws_idx + 1..]; // consume ' '
+        Some(parse_tags(tag_str))
+    } else {
+        None
+    };
+    let pfx: Option<Pfx> = if let Some(':') = msg.chars().next() {
+        // parse prefix
+        let ws_idx = msg.find(' ').ok_or(format!(
+            "can't find prefix terminator (' ') in msg: {:?}",
+            msg
+        ))?;
+        let pfx_str = &msg[1..ws_idx]; // consume ':'
+        msg = &msg[ws_idx + 1..]; // consume ' '
+        Some(parse_pfx(pfx_str))
+    } else {
+        None
     };
 
     let msg_ty: MsgType = {
@@ -463,7 +517,7 @@ fn parse_one_message(mut msg: &str) -> Result<Msg, String> {
         },
     };
 
-    Ok(Msg { pfx, cmd })
+    Ok(Msg { tags, pfx, cmd })
 }
 
 fn parse_params(chrs: &str) -> Vec<&str> {
@@ -575,6 +629,7 @@ mod tests {
         assert_eq!(
             parse_irc_msg(&mut buf).unwrap().unwrap(),
             Msg {
+                tags: None,
                 pfx: Some(Pfx::User {
                     nick: "nick".to_owned(),
                     user: "~nick@unaffiliated/nick".to_owned(),
@@ -601,6 +656,7 @@ mod tests {
         assert_eq!(
             parse_irc_msg(&mut buf).unwrap().unwrap(),
             Msg {
+                tags: None,
                 pfx: Some(Pfx::Server("barjavel.freenode.net".to_owned())),
                 cmd: Cmd::PRIVMSG {
                     target: MsgTarget::User("*".to_owned()),
@@ -659,6 +715,7 @@ mod tests {
         assert_eq!(
             parse_irc_msg(&mut buf).unwrap().unwrap(),
             Msg {
+                tags: None,
                 pfx: Some(Pfx::User {
                     nick: "tiny".to_owned(),
                     user: "~tiny@123.123.123.123".to_owned(),
@@ -678,6 +735,7 @@ mod tests {
         assert_eq!(
             parse_irc_msg(&mut buf).unwrap().unwrap(),
             Msg {
+                tags: None,
                 pfx: Some(Pfx::User {
                     nick: "tiny".to_owned(),
                     user: "~tiny@192.168.0.1".to_owned(),
@@ -702,6 +760,7 @@ mod tests {
         assert_eq!(
             parse_irc_msg(&mut buf).unwrap().unwrap(),
             Msg {
+                tags: None,
                 pfx: Some(Pfx::User {
                     nick: "dan".to_owned(),
                     user: "u@localhost".to_owned(),
@@ -835,6 +894,7 @@ mod tests {
         assert_eq!(
             parse_irc_msg(&mut buf).unwrap().unwrap(),
             Msg {
+                tags: None,
                 pfx: None,
                 cmd: Cmd::ERROR {
                     msg: "Closing Link: 212.252.143.51 (Excess Flood)".to_owned(),

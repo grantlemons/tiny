@@ -6,7 +6,6 @@ use std::io;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use time::Tm;
 
 use libtiny_common::{ChanName, ChanNameRef, MsgTarget};
 use libtiny_wire::formatting::remove_irc_control_chars;
@@ -50,26 +49,26 @@ impl Logger {
     delegate!(close_chan_tab(serv: &str, chan: &ChanNameRef,));
     delegate!(close_user_tab(serv: &str, nick: &str,));
     delegate!(add_client_msg(msg: &str, target: &MsgTarget,));
-    delegate!(add_msg(msg: &str, ts: Tm, target: &MsgTarget,));
+    delegate!(add_msg(msg: &str, ts: chrono::DateTime<chrono::Utc>, target: &MsgTarget,));
     delegate!(add_privmsg(
         sender: &str,
         msg: &str,
-        ts: Tm,
+        ts: chrono::DateTime<chrono::Utc>,
         target: &MsgTarget,
         highlight: bool,
         is_action: bool,
     ));
-    delegate!(add_nick(nick: &str, ts: Option<Tm>, target: &MsgTarget,));
-    delegate!(remove_nick(nick: &str, ts: Option<Tm>, target: &MsgTarget,));
+    delegate!(add_nick(nick: &str, ts: Option<chrono::DateTime<chrono::Utc>>, target: &MsgTarget,));
+    delegate!(remove_nick(nick: &str, ts: Option<chrono::DateTime<chrono::Utc>>, target: &MsgTarget,));
     delegate!(rename_nick(
         old_nick: &str,
         new_nick: &str,
-        ts: Tm,
+        ts: chrono::DateTime<chrono::Utc>,
         target: &MsgTarget,
     ));
     delegate!(set_topic(
         topic: &str,
-        ts: Tm,
+        ts: chrono::DateTime<chrono::Utc>,
         serv: &str,
         chan: &ChanNameRef,
     ));
@@ -102,21 +101,13 @@ struct ServerLogs {
 
 fn print_header(fd: &mut File) -> io::Result<()> {
     writeln!(fd)?;
-    writeln!(
-        fd,
-        "*** Logging started at {}",
-        time::strftime("%Y-%m-%d %H:%M:%S", &time::now()).unwrap()
-    )?;
+    writeln!(fd, "*** Logging started at {}", chrono::Utc::now())?;
     writeln!(fd)
 }
 
 fn print_footer(fd: &mut File) -> io::Result<()> {
     writeln!(fd)?;
-    writeln!(
-        fd,
-        "*** Logging ended at {}",
-        time::strftime("%Y-%m-%d %H:%M:%S", &time::now()).unwrap()
-    )?;
+    writeln!(fd, "*** Logging ended at {}", chrono::Utc::now())?;
     writeln!(fd)
 }
 
@@ -292,7 +283,7 @@ impl LoggerInner {
         });
     }
 
-    fn add_msg(&mut self, msg: &str, ts: Tm, target: &MsgTarget) {
+    fn add_msg(&mut self, msg: &str, ts: chrono::DateTime<chrono::Utc>, target: &MsgTarget) {
         self.apply_to_target(target, |fd: &mut File, report_err: &dyn Fn(String)| {
             report_io_err!(report_err, writeln!(fd, "[{}] {}", strf(&ts), msg));
         });
@@ -302,7 +293,7 @@ impl LoggerInner {
         &mut self,
         sender: &str,
         msg: &str,
-        ts: Tm,
+        ts: chrono::DateTime<chrono::Utc>,
         target: &MsgTarget,
         _highlight: bool,
         is_action: bool,
@@ -318,7 +309,12 @@ impl LoggerInner {
         });
     }
 
-    fn add_nick(&mut self, nick: &str, ts: Option<Tm>, target: &MsgTarget) {
+    fn add_nick(
+        &mut self,
+        nick: &str,
+        ts: Option<chrono::DateTime<chrono::Utc>>,
+        target: &MsgTarget,
+    ) {
         if let Some(_ts) = ts {
             // This method is only called when a user joins a chan
             self.apply_to_target(target, |fd: &mut File, report_err: &dyn Fn(String)| {
@@ -330,7 +326,12 @@ impl LoggerInner {
         }
     }
 
-    fn remove_nick(&mut self, nick: &str, ts: Option<Tm>, target: &MsgTarget) {
+    fn remove_nick(
+        &mut self,
+        nick: &str,
+        ts: Option<chrono::DateTime<chrono::Utc>>,
+        target: &MsgTarget,
+    ) {
         if let Some(_ts) = ts {
             // TODO: Did the user leave a channel or the server? Currently we can't tell.
             self.apply_to_target(target, |fd: &mut File, report_err: &dyn Fn(String)| {
@@ -339,7 +340,13 @@ impl LoggerInner {
         }
     }
 
-    fn rename_nick(&mut self, old_nick: &str, new_nick: &str, ts: Tm, target: &MsgTarget) {
+    fn rename_nick(
+        &mut self,
+        old_nick: &str,
+        new_nick: &str,
+        ts: chrono::DateTime<chrono::Utc>,
+        target: &MsgTarget,
+    ) {
         self.apply_to_target(target, |fd: &mut File, report_err: &dyn Fn(String)| {
             report_io_err!(
                 report_err,
@@ -354,7 +361,13 @@ impl LoggerInner {
         });
     }
 
-    fn set_topic(&mut self, topic: &str, ts: Tm, serv: &str, chan: &ChanNameRef) {
+    fn set_topic(
+        &mut self,
+        topic: &str,
+        ts: chrono::DateTime<chrono::Utc>,
+        serv: &str,
+        chan: &ChanNameRef,
+    ) {
         let target = MsgTarget::Chan { serv, chan };
         self.apply_to_target(&target, |fd: &mut File, report_err: &dyn Fn(String)| {
             report_io_err!(
@@ -452,9 +465,9 @@ impl LoggerInner {
 }
 
 fn now() -> String {
-    time::strftime("%H:%M:%S", &time::now()).unwrap()
+    chrono::Utc::now().format("%H:%M:%S").to_string()
 }
 
-fn strf(tm: &Tm) -> String {
-    time::strftime("%H:%M:%S", tm).unwrap()
+fn strf(tm: &chrono::DateTime<chrono::Utc>) -> String {
+    tm.format("%H:%M:%S").to_string()
 }

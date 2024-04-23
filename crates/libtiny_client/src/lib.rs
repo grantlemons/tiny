@@ -438,7 +438,7 @@ async fn main_loop(
         // Reset the connection state
         irc_state.reset();
         // Introduce self
-        if server_info.sasl_auth.is_some() {
+        if true {
             // Will introduce self after getting a response to this LS command.
             // This is to avoid getting stuck during nick registration. See the
             // discussion in #91.

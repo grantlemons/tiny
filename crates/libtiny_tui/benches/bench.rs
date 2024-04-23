@@ -5,7 +5,6 @@ use bencher::Bencher;
 use libtiny_common::MsgTarget;
 use libtiny_tui::tui::TUI;
 use std::{fs::File, io::BufRead, io::BufReader, io::Read};
-use time::Tm;
 
 use libtiny_tui::trie::Trie;
 
@@ -129,7 +128,7 @@ fn tui_resize(b: &mut Bencher) {
     let server = "<server>";
     tui.new_server_tab(server, None);
 
-    let ts: Tm = time::empty_tm();
+    let ts = chrono::Utc::now();
     let target = MsgTarget::CurrentTab;
 
     let f = File::open("test/lipsum.txt").unwrap();
