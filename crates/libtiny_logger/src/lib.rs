@@ -465,9 +465,10 @@ impl LoggerInner {
 }
 
 fn now() -> String {
-    chrono::Utc::now().format("%H:%M:%S").to_string()
+    chrono::Local::now().format("%H:%M:%S").to_string()
 }
 
 fn strf(tm: &chrono::DateTime<chrono::Utc>) -> String {
-    tm.format("%H:%M:%S").to_string()
+    let tm_local = chrono::DateTime::<chrono::Local>::from(tm.to_owned());
+    tm_local.format("%H:%M:%S").to_string()
 }
