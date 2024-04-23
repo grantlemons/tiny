@@ -49,7 +49,7 @@ fn run_bench() {
 
 async fn bench_task(tui: TUI, lines: Vec<String>) {
     let msg_target = MsgTarget::Server { serv: "mentions" };
-    let time = chrono::Utc::now();
+    let time = chrono::Local::now();
 
     for line in &lines {
         tui.add_privmsg("server", line, time, &msg_target, false, false);

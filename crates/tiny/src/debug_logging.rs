@@ -48,7 +48,7 @@ impl Log for Logger {
             let _ = writeln!(
                 file,
                 "[{}] {} [{}:{}] {}",
-                chrono::Utc::now(),
+                chrono::Local::now(),
                 record.level(),
                 record.file().unwrap_or_default(),
                 record.line().unwrap_or_default(),
@@ -81,7 +81,7 @@ impl LazyFile {
                     Ok(mut file) => {
                         // Same format used in libtiny_logger
                         let _ =
-                            writeln!(file, "\n*** Logging started at {}\n", chrono::Utc::now(),);
+                            writeln!(file, "\n*** Logging started at {}\n", chrono::Local::now(),);
                         file
                     }
                     Err(_) => {

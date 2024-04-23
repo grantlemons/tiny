@@ -87,7 +87,7 @@ fn small_screen_1() {
     tui.next_tab();
 
     let target = MsgTarget::Chan { serv, chan };
-    let ts = chrono::Utc::now();
+    let ts = chrono::Local::now();
     tui.add_nick("123456", Some(ts), &target);
     tui.add_nick("abcdef", Some(ts), &target);
 
@@ -136,7 +136,7 @@ fn small_screen_2() {
     tui.next_tab();
 
     let target = MsgTarget::Chan { serv, chan };
-    let ts = chrono::Utc::now();
+    let ts = chrono::Local::now();
     tui.set_topic("Blah blah blah-", ts, serv, chan);
 
     tui.draw();
@@ -243,7 +243,7 @@ fn test_text_field_wrap() {
 
     // Write some stuff
     let target = MsgTarget::CurrentTab;
-    let ts = chrono::Utc::now();
+    let ts = chrono::Local::now();
     tui.add_msg("test test test", ts, &target);
 
     for _ in 0..37 {

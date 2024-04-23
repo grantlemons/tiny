@@ -49,26 +49,26 @@ impl Logger {
     delegate!(close_chan_tab(serv: &str, chan: &ChanNameRef,));
     delegate!(close_user_tab(serv: &str, nick: &str,));
     delegate!(add_client_msg(msg: &str, target: &MsgTarget,));
-    delegate!(add_msg(msg: &str, ts: chrono::DateTime<chrono::Utc>, target: &MsgTarget,));
+    delegate!(add_msg(msg: &str, ts: chrono::DateTime<chrono::Local>, target: &MsgTarget,));
     delegate!(add_privmsg(
         sender: &str,
         msg: &str,
-        ts: chrono::DateTime<chrono::Utc>,
+        ts: chrono::DateTime<chrono::Local>,
         target: &MsgTarget,
         highlight: bool,
         is_action: bool,
     ));
-    delegate!(add_nick(nick: &str, ts: Option<chrono::DateTime<chrono::Utc>>, target: &MsgTarget,));
-    delegate!(remove_nick(nick: &str, ts: Option<chrono::DateTime<chrono::Utc>>, target: &MsgTarget,));
+    delegate!(add_nick(nick: &str, ts: Option<chrono::DateTime<chrono::Local>>, target: &MsgTarget,));
+    delegate!(remove_nick(nick: &str, ts: Option<chrono::DateTime<chrono::Local>>, target: &MsgTarget,));
     delegate!(rename_nick(
         old_nick: &str,
         new_nick: &str,
-        ts: chrono::DateTime<chrono::Utc>,
+        ts: chrono::DateTime<chrono::Local>,
         target: &MsgTarget,
     ));
     delegate!(set_topic(
         topic: &str,
-        ts: chrono::DateTime<chrono::Utc>,
+        ts: chrono::DateTime<chrono::Local>,
         serv: &str,
         chan: &ChanNameRef,
     ));
@@ -101,13 +101,13 @@ struct ServerLogs {
 
 fn print_header(fd: &mut File) -> io::Result<()> {
     writeln!(fd)?;
-    writeln!(fd, "*** Logging started at {}", chrono::Utc::now())?;
+    writeln!(fd, "*** Logging started at {}", chrono::Local::now())?;
     writeln!(fd)
 }
 
 fn print_footer(fd: &mut File) -> io::Result<()> {
     writeln!(fd)?;
-    writeln!(fd, "*** Logging ended at {}", chrono::Utc::now())?;
+    writeln!(fd, "*** Logging ended at {}", chrono::Local::now())?;
     writeln!(fd)
 }
 
@@ -283,7 +283,7 @@ impl LoggerInner {
         });
     }
 
-    fn add_msg(&mut self, msg: &str, ts: chrono::DateTime<chrono::Utc>, target: &MsgTarget) {
+    fn add_msg(&mut self, msg: &str, ts: chrono::DateTime<chrono::Local>, target: &MsgTarget) {
         self.apply_to_target(target, |fd: &mut File, report_err: &dyn Fn(String)| {
             report_io_err!(report_err, writeln!(fd, "[{}] {}", strf(&ts), msg));
         });
@@ -293,7 +293,7 @@ impl LoggerInner {
         &mut self,
         sender: &str,
         msg: &str,
-        ts: chrono::DateTime<chrono::Utc>,
+        ts: chrono::DateTime<chrono::Local>,
         target: &MsgTarget,
         _highlight: bool,
         is_action: bool,
@@ -312,7 +312,7 @@ impl LoggerInner {
     fn add_nick(
         &mut self,
         nick: &str,
-        ts: Option<chrono::DateTime<chrono::Utc>>,
+        ts: Option<chrono::DateTime<chrono::Local>>,
         target: &MsgTarget,
     ) {
         if let Some(_ts) = ts {
@@ -329,7 +329,7 @@ impl LoggerInner {
     fn remove_nick(
         &mut self,
         nick: &str,
-        ts: Option<chrono::DateTime<chrono::Utc>>,
+        ts: Option<chrono::DateTime<chrono::Local>>,
         target: &MsgTarget,
     ) {
         if let Some(_ts) = ts {
@@ -344,7 +344,7 @@ impl LoggerInner {
         &mut self,
         old_nick: &str,
         new_nick: &str,
-        ts: chrono::DateTime<chrono::Utc>,
+        ts: chrono::DateTime<chrono::Local>,
         target: &MsgTarget,
     ) {
         self.apply_to_target(target, |fd: &mut File, report_err: &dyn Fn(String)| {
@@ -364,7 +364,7 @@ impl LoggerInner {
     fn set_topic(
         &mut self,
         topic: &str,
-        ts: chrono::DateTime<chrono::Utc>,
+        ts: chrono::DateTime<chrono::Local>,
         serv: &str,
         chan: &ChanNameRef,
     ) {
@@ -468,7 +468,7 @@ fn now() -> String {
     chrono::Local::now().format("%H:%M:%S").to_string()
 }
 
-fn strf(tm: &chrono::DateTime<chrono::Utc>) -> String {
+fn strf(tm: &chrono::DateTime<chrono::Local>) -> String {
     let tm_local = chrono::DateTime::<chrono::Local>::from(tm.to_owned());
     tm_local.format("%H:%M:%S").to_string()
 }

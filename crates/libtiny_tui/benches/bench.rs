@@ -128,7 +128,7 @@ fn tui_resize(b: &mut Bencher) {
     let server = "<server>";
     tui.new_server_tab(server, None);
 
-    let ts = chrono::Utc::now();
+    let ts = chrono::Local::now();
     let target = MsgTarget::CurrentTab;
 
     let f = File::open("test/lipsum.txt").unwrap();

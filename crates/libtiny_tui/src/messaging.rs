@@ -43,7 +43,7 @@ pub(crate) struct MessagingUI {
 /// Length of ": " suffix of nicks in messages
 pub(crate) const MSG_NICK_SUFFIX_LEN: usize = 2;
 
-/// Like `time::chrono::DateTime<chrono::Utc>`, but we only care about hour and minute parts.
+/// Like `time::chrono::DateTime<chrono::Local>`, but we only care about hour and minute parts.
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub(crate) struct Timestamp {
     hour: u32,
@@ -67,8 +67,8 @@ impl Timestamp {
     }
 }
 
-impl From<chrono::DateTime<chrono::Utc>> for Timestamp {
-    fn from(tm: chrono::DateTime<chrono::Utc>) -> Timestamp {
+impl From<chrono::DateTime<chrono::Local>> for Timestamp {
+    fn from(tm: chrono::DateTime<chrono::Local>) -> Timestamp {
         Timestamp {
             hour: tm.hour(),
             min: tm.minute(),

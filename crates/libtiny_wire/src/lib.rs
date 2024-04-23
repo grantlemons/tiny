@@ -112,7 +112,7 @@ pub fn authenticate(msg: &str) -> String {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Tag {
-    Time(chrono::DateTime<chrono::Utc>),
+    Time(chrono::DateTime<chrono::Local>),
     Unimplemented(String),
 }
 
@@ -188,15 +188,15 @@ fn translate_tag_esc_chars(s: &str) -> String {
         .map(|(a, b)| {
             if a == '\\' {
                 match b {
-                    ':' => return ";".to_string(),
-                    's' => return " ".to_string(),
-                    '\\' => return r"\".to_string(),
-                    '\r' => return "\r".to_string(),
-                    '\n' => return "\n".to_string(),
-                    _ => return format!("{}{}", a, b),
+                    ':' => return ';',
+                    's' => return ' ',
+                    '\\' => return '\\',
+                    '\r' => return '\r',
+                    '\n' => return '\n',
+                    _ => return a,
                 }
             } else {
-                format!("{}{}", a, b)
+                a
             }
         })
         .collect()
@@ -209,11 +209,11 @@ fn parse_tags(tags: &str) -> Vec<Tag> {
             let idx = st.find('=').unwrap();
             match &st[..idx] {
                 "time" => Tag::Time(
-                    chrono::DateTime::parse_from_rfc3339(&st[idx..])
-                        .unwrap()
-                        .to_utc(),
+                    chrono::DateTime::parse_from_rfc3339(&format!("{}{}", &st[idx + 1..], 'Z'))
+                        .expect("Unable to parse date from tag string")
+                        .into(),
                 ),
-                s => Tag::Unimplemented(s.to_owned()),
+                _ => Tag::Unimplemented(st.to_owned()),
             }
         })
         .collect()
@@ -348,6 +348,26 @@ pub enum Cmd {
 enum MsgType<'a> {
     Cmd(&'a str),
     Num(u16),
+}
+
+impl Msg {
+    pub fn time(&self) -> chrono::DateTime<chrono::Local> {
+        self.tags
+            .to_owned()
+            .map(|tags| {
+                tags.into_iter()
+                    .filter_map(|t| {
+                        if let Tag::Time(time) = t {
+                            Some(time)
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+            })
+            .flatten()
+            .unwrap_or(chrono::Local::now())
+    }
 }
 
 static CRLF: [u8; 2] = [b'\r', b'\n'];

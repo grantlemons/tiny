@@ -226,16 +226,19 @@ impl Client {
     where
         I: Iterator<Item = &'a ChanNameRef> + 'a,
     {
+        debug!("Attempting to join channel");
         self.msg_chan.try_send(Cmd::Msg(wire::join(chans))).unwrap()
     }
 
     /// Leave a channel.
     pub fn part(&mut self, chan: &ChanNameRef, reason: Option<String>) {
+        debug!("Attempting to leave channel");
         self.state.leave_channel(&mut self.msg_chan, chan, reason)
     }
 
     /// Set away status. `None` means not away.
     pub fn away(&mut self, msg: Option<&str>) {
+        debug!("Attempting to set away state");
         self.state.set_away(msg);
         self.msg_chan.try_send(Cmd::Msg(wire::away(msg))).unwrap()
     }
@@ -243,6 +246,7 @@ impl Client {
     /// Change nick. This may fail (ERR_NICKNAMEINUSE) so wait for confirmation (a NICK message
     /// back from the server, with the old nick as prefix).
     pub fn nick(&mut self, new_nick: &str) {
+        debug!("Attempting to set nickname");
         self.msg_chan
             .try_send(Cmd::Msg(wire::nick(new_nick)))
             .unwrap()

@@ -1320,7 +1320,7 @@ impl TUI {
         &mut self,
         sender: &str,
         msg: &str,
-        ts: chrono::DateTime<chrono::Utc>,
+        ts: chrono::DateTime<chrono::Local>,
         target: &MsgTarget,
         highlight: bool,
         is_action: bool,
@@ -1344,7 +1344,7 @@ impl TUI {
 
     /// A message without any explicit sender info. Useful for e.g. in server
     /// and debug log tabs. Timestamped and logged.
-    pub fn add_msg(&mut self, msg: &str, ts: chrono::DateTime<chrono::Utc>, target: &MsgTarget) {
+    pub fn add_msg(&mut self, msg: &str, ts: chrono::DateTime<chrono::Local>, target: &MsgTarget) {
         self.apply_to_target(target, true, &mut |tab: &mut Tab, _| {
             tab.widget.add_msg(msg, Timestamp::from(ts));
         });
@@ -1355,7 +1355,7 @@ impl TUI {
     pub(crate) fn add_err_msg(
         &mut self,
         msg: &str,
-        ts: chrono::DateTime<chrono::Utc>,
+        ts: chrono::DateTime<chrono::Local>,
         target: &MsgTarget,
     ) {
         self.apply_to_target(target, true, &mut |tab: &mut Tab, _| {
@@ -1366,7 +1366,7 @@ impl TUI {
     pub(crate) fn set_topic(
         &mut self,
         title: &str,
-        ts: chrono::DateTime<chrono::Utc>,
+        ts: chrono::DateTime<chrono::Local>,
         serv: &str,
         chan: &ChanNameRef,
     ) {
@@ -1386,7 +1386,7 @@ impl TUI {
     pub(crate) fn add_nick(
         &mut self,
         nick: &str,
-        ts: Option<chrono::DateTime<chrono::Utc>>,
+        ts: Option<chrono::DateTime<chrono::Local>>,
         target: &MsgTarget,
     ) {
         let ignore = self
@@ -1405,7 +1405,7 @@ impl TUI {
     pub(crate) fn remove_nick(
         &mut self,
         nick: &str,
-        ts: Option<chrono::DateTime<chrono::Utc>>,
+        ts: Option<chrono::DateTime<chrono::Local>>,
         target: &MsgTarget,
     ) {
         let ignore = self
@@ -1425,7 +1425,7 @@ impl TUI {
         &mut self,
         old_nick: &str,
         new_nick: &str,
-        ts: chrono::DateTime<chrono::Utc>,
+        ts: chrono::DateTime<chrono::Local>,
         target: &MsgTarget,
     ) {
         self.apply_to_target(target, false, &mut |tab: &mut Tab, _| {

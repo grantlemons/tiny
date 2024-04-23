@@ -48,7 +48,7 @@ pub(crate) async fn task(
 
 fn handle_conn_ev(ui: &UI, client: &dyn Client, ev: libtiny_client::Event) {
     use libtiny_client::Event::*;
-    let ts = chrono::Utc::now();
+    let ts = chrono::Local::now();
     match ev {
         ResolvingHost => {
             ui.add_client_msg(
@@ -152,7 +152,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
     use wire::Pfx::*;
 
     let wire::Msg { tags, pfx, cmd } = msg;
-    let ts: chrono::DateTime<chrono::Utc> = tags
+    let ts: chrono::DateTime<chrono::Local> = tags
         .map(|tags| {
             tags.into_iter()
                 .filter_map(|t| {
@@ -165,7 +165,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                 .next()
         })
         .flatten()
-        .unwrap_or(chrono::Utc::now());
+        .unwrap_or(chrono::Local::now());
     let serv = client.get_serv_name();
     match cmd {
         PRIVMSG {
