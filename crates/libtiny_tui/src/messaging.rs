@@ -59,23 +59,23 @@ static WHITESPACE: &str =
 
 impl Timestamp {
     /// The width of a timestamp plus a space.
-    pub(crate) const WIDTH: usize = 6;
+    pub(crate) const WIDTH: usize = 14;
+
+    /// Spaces
+    pub(crate) const SPACER: &'static str = "              ";
 
     fn stamp(&self) -> String {
         let now = chrono::Local::now();
         if self.month == now.month() && self.day == now.day() {
-            format!("{:02}:{:02} ", self.hour, self.min)
+            format!("{:02}:{:02}         ", self.hour, self.min)
         } else if self.month == now.month() {
-            format!("({}) {:02}:{:02} ", self.day, self.hour, self.min)
+            format!("({}) {:02}:{:02}    ", self.day, self.hour, self.min)
         } else {
             format!(
                 "({}-{}) {:02}:{:02} ",
                 self.month, self.day, self.hour, self.min
             )
         }
-    }
-    fn spacer(&self) -> String {
-        self.stamp().chars().map(|_| ' ').collect()
     }
 }
 
@@ -262,7 +262,8 @@ impl MessagingUI {
             if ts_ != ts {
                 self.msg_area.add_text(&ts.stamp(), SegStyle::Timestamp);
             } else if self.msg_area.layout().is_aligned() {
-                self.msg_area.add_text(&ts.spacer(), SegStyle::Timestamp);
+                self.msg_area
+                    .add_text(Timestamp::SPACER, SegStyle::Timestamp);
             }
         } else {
             self.msg_area.add_text(&ts.stamp(), SegStyle::Timestamp);
