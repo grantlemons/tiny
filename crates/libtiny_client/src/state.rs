@@ -282,9 +282,9 @@ impl StateInner {
         snd_irc_msg: &mut Sender<String>,
     ) {
         let Msg {
-            ref tags,
             ref pfx,
             ref mut cmd,
+            ..
         } = msg;
 
         use wire::Cmd::*;

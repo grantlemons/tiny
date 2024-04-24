@@ -1325,6 +1325,8 @@ impl TUI {
         highlight: bool,
         is_action: bool,
     ) {
+        use chrono::DurationRound;
+
         let mut notifier = if let Some(serv) = target.serv_name() {
             self.get_tab_config(serv, target.chan_or_user_name())
                 .notify
@@ -1335,9 +1337,15 @@ impl TUI {
         self.apply_to_target(target, true, &mut |tab: &mut Tab, _| {
             tab.widget
                 .add_privmsg(sender, msg, Timestamp::from(ts), highlight, is_action);
+
+            let current_time = chrono::Local::now();
+            let is_recent = ts.duration_round(chrono::Duration::seconds(5))
+                == current_time.duration_round(chrono::Duration::seconds(5));
             let nick = tab.widget.get_nick();
             if let Some(nick_) = nick {
-                notifier.notify_privmsg(sender, msg, target, &nick_, highlight);
+                if is_recent {
+                    notifier.notify_privmsg(sender, msg, target, &nick_, highlight);
+                }
             }
         });
     }

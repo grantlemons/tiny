@@ -20,9 +20,6 @@ use std::sync::Mutex;
 
 pub(crate) fn init(path: PathBuf) {
     let filter = filter::Builder::from_env("TINY_LOG").build();
-    let filter = filter::Builder::new()
-        .filter_level(log::LevelFilter::Debug)
-        .build();
     let sink = Mutex::new(LazyFile::new(path));
 
     log::set_max_level(filter.filter());
