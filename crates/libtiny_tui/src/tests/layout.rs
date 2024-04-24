@@ -1,5 +1,6 @@
 use std::panic::Location;
 
+use chrono::DurationRound;
 use libtiny_common::{ChanNameRef, MsgTarget};
 
 use crate::msg_area::Layout;
@@ -18,7 +19,11 @@ fn test_join_part_overflow() {
     tui.next_tab(); // server -> channel
 
     let target = MsgTarget::Chan { serv, chan };
-    let ts = chrono::Local::now();
+    let ts = chrono::Local::now()
+        .duration_trunc(chrono::Duration::days(1))
+        .unwrap()
+        .duration_trunc(chrono::Duration::days(1))
+        .unwrap();
     tui.add_nick("123456", Some(ts), &target);
     tui.add_nick("abcdef", Some(ts), &target);
     tui.add_nick("hijklm", Some(ts), &target);
@@ -47,7 +52,9 @@ fn test_alignment_long_string() {
     tui.next_tab(); // server -> channel
 
     let target = MsgTarget::Chan { serv, chan };
-    let ts = chrono::Local::now();
+    let ts = chrono::Local::now()
+        .duration_trunc(chrono::Duration::days(1))
+        .unwrap();
     tui.add_privmsg(
         "osa1",
         "123456789012345678901234567890",
@@ -135,7 +142,9 @@ fn test_aligned_layout_activity_timestamp() {
     // 1.1 - 2.1
     {
         let (mut tui, target) = setup_aligned_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_privmsg(
             "osa1", "hi", ts, &target, false, // highlight
             false, // is_action
@@ -157,12 +166,16 @@ fn test_aligned_layout_activity_timestamp() {
     // 1.1 - 2.2
     {
         let (mut tui, target) = setup_aligned_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_privmsg(
             "osa1", "hi", ts, &target, false, // highlight
             false, // is_action
         );
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_nick("test", Some(ts), &target);
         tui.draw();
 
@@ -180,7 +193,9 @@ fn test_aligned_layout_activity_timestamp() {
     // 1.2 - 2.1
     {
         let (mut tui, target) = setup_aligned_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_privmsg(
             "osa1", "hi", ts, &target, false, // highlight
             false, // is_action
@@ -202,12 +217,16 @@ fn test_aligned_layout_activity_timestamp() {
     // 1.2 - 2.2
     {
         let (mut tui, target) = setup_aligned_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_privmsg(
             "osa1", "hi", ts, &target, false, // highlight
             false, // is_action
         );
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_privmsg("osa1", "test", ts, &target, false, false);
         tui.draw();
 
@@ -225,7 +244,9 @@ fn test_aligned_layout_activity_timestamp() {
     // 1.3 - 2.1
     {
         let (mut tui, target) = setup_aligned_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_nick("test", Some(ts), &target);
         tui.add_privmsg(
             "osa1", "hi", ts, &target, false, // highlight
@@ -247,9 +268,13 @@ fn test_aligned_layout_activity_timestamp() {
     // 1.3 - 2.2
     {
         let (mut tui, target) = setup_aligned_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_nick("test", Some(ts), &target);
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_privmsg(
             "osa1", "hi", ts, &target, false, // highlight
             false, // is_action
@@ -270,7 +295,9 @@ fn test_aligned_layout_activity_timestamp() {
     // 1.4 - 2.1
     {
         let (mut tui, target) = setup_aligned_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_nick("test1", Some(ts), &target);
         tui.add_nick("test2", Some(ts), &target);
         tui.draw();
@@ -289,9 +316,13 @@ fn test_aligned_layout_activity_timestamp() {
     // 1.4 - 2.2
     {
         let (mut tui, target) = setup_aligned_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_nick("test1", Some(ts), &target);
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_nick("test2", Some(ts), &target);
         tui.draw();
 
@@ -313,7 +344,9 @@ fn test_compact_layout_activity_timestamp() {
     // 1.1 - 2.1
     {
         let (mut tui, target) = setup_compact_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_privmsg(
             "osa1", "hi", ts, &target, false, // highlight
             false, // is_action
@@ -335,12 +368,16 @@ fn test_compact_layout_activity_timestamp() {
     // 1.1 - 2.2
     {
         let (mut tui, target) = setup_compact_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_privmsg(
             "osa1", "hi", ts, &target, false, // highlight
             false, // is_action
         );
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_nick("test", Some(ts), &target);
         tui.draw();
 
@@ -358,7 +395,9 @@ fn test_compact_layout_activity_timestamp() {
     // 1.2 - 2.1
     {
         let (mut tui, target) = setup_compact_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_privmsg(
             "osa1", "hi", ts, &target, false, // highlight
             false, // is_action
@@ -380,12 +419,16 @@ fn test_compact_layout_activity_timestamp() {
     // 1.2 - 2.2
     {
         let (mut tui, target) = setup_compact_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_privmsg(
             "osa1", "hi", ts, &target, false, // highlight
             false, // is_action
         );
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_privmsg("osa1", "test", ts, &target, false, false);
         tui.draw();
 
@@ -403,7 +446,9 @@ fn test_compact_layout_activity_timestamp() {
     // 1.3 - 2.1
     {
         let (mut tui, target) = setup_compact_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_nick("test", Some(ts), &target);
         tui.add_privmsg(
             "osa1", "hi", ts, &target, false, // highlight
@@ -425,9 +470,13 @@ fn test_compact_layout_activity_timestamp() {
     // 1.3 - 2.2
     {
         let (mut tui, target) = setup_compact_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_nick("test", Some(ts), &target);
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_privmsg(
             "osa1", "hi", ts, &target, false, // highlight
             false, // is_action
@@ -448,7 +497,9 @@ fn test_compact_layout_activity_timestamp() {
     // 1.4 - 2.1
     {
         let (mut tui, target) = setup_compact_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_nick("test1", Some(ts), &target);
         tui.add_nick("test2", Some(ts), &target);
         tui.draw();
@@ -467,9 +518,13 @@ fn test_compact_layout_activity_timestamp() {
     // 1.4 - 2.2
     {
         let (mut tui, target) = setup_compact_tui();
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_nick("test1", Some(ts), &target);
-        let ts = chrono::Local::now();
+        let ts = chrono::Local::now()
+            .duration_trunc(chrono::Duration::days(1))
+            .unwrap();
         tui.add_nick("test2", Some(ts), &target);
         tui.draw();
 
@@ -490,7 +545,9 @@ fn test_compact_layout_activity_timestamp() {
 fn test_clear_timestamp_aligned() {
     let (mut tui, target) = setup_aligned_tui();
 
-    let ts = chrono::Local::now();
+    let ts = chrono::Local::now()
+        .duration_trunc(chrono::Duration::days(1))
+        .unwrap();
     tui.add_nick("test1", Some(ts), &target);
     tui.clear(&target);
     tui.add_nick("test2", Some(ts), &target);
@@ -512,7 +569,9 @@ fn test_clear_timestamp_aligned() {
 fn test_clear_timestamp_compact() {
     let (mut tui, target) = setup_compact_tui();
 
-    let ts = chrono::Local::now();
+    let ts = chrono::Local::now()
+        .duration_trunc(chrono::Duration::days(1))
+        .unwrap();
     tui.add_nick("test1", Some(ts), &target);
     tui.clear(&target);
     tui.add_nick("test2", Some(ts), &target);

@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::panic::Location;
 
+use chrono::DurationRound;
 use libtiny_common::{ChanNameRef, MsgTarget};
 use term_input::{Arrow, Key};
 
@@ -20,7 +21,9 @@ fn test_resize_recalc_scroll() {
     tui.next_tab();
 
     let target = MsgTarget::Chan { serv, chan };
-    let ts = chrono::Local::now();
+    let ts = chrono::Local::now()
+        .duration_trunc(chrono::Duration::days(1))
+        .unwrap();
     tui.add_privmsg(
         "osa1",
         "s 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 e",
@@ -93,7 +96,9 @@ fn test_resize_scroll_stick_to_top() {
     tui.next_tab();
 
     let target = MsgTarget::Chan { serv, chan };
-    let ts = chrono::Local::now();
+    let ts = chrono::Local::now()
+        .duration_trunc(chrono::Duration::days(1))
+        .unwrap();
 
     for i in 0..15 {
         tui.add_privmsg("osa1", &format!("line{}", i), ts, &target, false, false);
@@ -155,7 +160,9 @@ fn test_resize_no_scroll_stay_on_bottom() {
     tui.next_tab();
 
     let target = MsgTarget::Chan { serv, chan };
-    let ts = chrono::Local::now();
+    let ts = chrono::Local::now()
+        .duration_trunc(chrono::Duration::days(1))
+        .unwrap();
 
     for i in 0..15 {
         tui.add_privmsg("osa1", &format!("line{}", i), ts, &target, false, false);
@@ -230,7 +237,9 @@ fn test_resize() {
     let server = "<server>";
     tui.new_server_tab(server, None);
 
-    let ts = chrono::Local::now();
+    let ts = chrono::Local::now()
+        .duration_trunc(chrono::Duration::days(1))
+        .unwrap();
     let target = MsgTarget::CurrentTab;
 
     let f = File::open("test/lipsum.txt").unwrap();
@@ -259,7 +268,9 @@ fn test_resize_scroll_resize() {
     tui.next_tab();
 
     let target = MsgTarget::Chan { serv, chan };
-    let ts = chrono::Local::now();
+    let ts = chrono::Local::now()
+        .duration_trunc(chrono::Duration::days(1))
+        .unwrap();
 
     for i in 0..15 {
         tui.add_privmsg(
@@ -329,7 +340,9 @@ fn test_clear_resize_recalc_scroll() {
     tui.next_tab();
 
     let target = MsgTarget::Chan { serv, chan };
-    let ts = chrono::Local::now();
+    let ts = chrono::Local::now()
+        .duration_trunc(chrono::Duration::days(1))
+        .unwrap();
     for _ in 0..6 {
         tui.add_privmsg("osa1", &"1111 ".repeat(3), ts, &target, false, false);
     }
