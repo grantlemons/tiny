@@ -188,12 +188,12 @@ fn translate_tag_esc_chars(s: &str) -> String {
         .map(|(a, b)| {
             if a == '\\' {
                 match b {
-                    ':' => return ';',
-                    's' => return ' ',
-                    '\\' => return '\\',
-                    '\r' => return '\r',
-                    '\n' => return '\n',
-                    _ => return a,
+                    ':' => ';',
+                    's' => ' ',
+                    '\\' => '\\',
+                    '\r' => '\r',
+                    '\n' => '\n',
+                    _ => a,
                 }
             } else {
                 a
@@ -354,7 +354,7 @@ impl Msg {
     pub fn time(&self) -> chrono::DateTime<chrono::Local> {
         self.tags
             .to_owned()
-            .map(|tags| {
+            .and_then(|tags| {
                 tags.into_iter()
                     .filter_map(|t| {
                         if let Tag::Time(time) = t {
@@ -365,7 +365,6 @@ impl Msg {
                     })
                     .next()
             })
-            .flatten()
             .unwrap_or(chrono::Local::now())
     }
 }

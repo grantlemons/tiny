@@ -469,6 +469,5 @@ fn now() -> String {
 }
 
 fn strf(tm: &chrono::DateTime<chrono::Local>) -> String {
-    let tm_local = chrono::DateTime::<chrono::Local>::from(tm.to_owned());
-    tm_local.format("%H:%M:%S").to_string()
+    tm.format("%H:%M:%S").to_string()
 }

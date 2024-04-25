@@ -153,7 +153,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
 
     let wire::Msg { tags, pfx, cmd } = msg;
     let ts: chrono::DateTime<chrono::Local> = tags
-        .map(|tags| {
+        .and_then(|tags| {
             tags.into_iter()
                 .filter_map(|t| {
                     if let Tag::Time(time) = t {
@@ -164,9 +164,30 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                 })
                 .next()
         })
-        .flatten()
         .unwrap_or(chrono::Local::now());
     let serv = client.get_serv_name();
+
+    fn tab_style_new_msg(ui: &UI, ts: chrono::DateTime<chrono::Local>, target: &MsgTarget) {
+        use chrono::DurationRound;
+
+        let current_time = chrono::Local::now();
+        let is_recent = ts.duration_round(chrono::Duration::seconds(5))
+            == current_time.duration_round(chrono::Duration::seconds(5));
+        if is_recent {
+            ui.set_tab_style(TabStyle::NewMsg, target);
+        }
+    }
+    fn tab_style_mention(ui: &UI, ts: chrono::DateTime<chrono::Local>, target: &MsgTarget) {
+        use chrono::DurationRound;
+
+        let current_time = chrono::Local::now();
+        let is_recent = ts.duration_round(chrono::Duration::seconds(5))
+            == current_time.duration_round(chrono::Duration::seconds(5));
+        if is_recent {
+            ui.set_tab_style(TabStyle::Highlight, target);
+        }
+    }
+
     match cmd {
         PRIVMSG {
             target,
@@ -209,17 +230,17 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                     // Highlight the message if it mentions us.
                     if mentions_user(&msg, &client.get_nick()) {
                         ui.add_privmsg(sender, &msg, ts, &ui_msg_target, true, is_action);
-                        ui.set_tab_style(TabStyle::Highlight, &ui_msg_target);
+                        tab_style_mention(ui, ts, &ui_msg_target);
                         let mentions_target = MsgTarget::Server { serv: "mentions" };
                         ui.add_msg(
                             &format!("{} in {}:{}: {}", sender, serv, chan.display(), msg),
                             ts,
                             &mentions_target,
                         );
-                        ui.set_tab_style(TabStyle::Highlight, &mentions_target);
+                        tab_style_mention(ui, ts, &mentions_target);
                     } else {
                         ui.add_privmsg(sender, &msg, ts, &ui_msg_target, false, is_action);
-                        ui.set_tab_style(TabStyle::NewMsg, &ui_msg_target);
+                        tab_style_new_msg(ui, ts, &ui_msg_target);
                     }
                 }
                 wire::MsgTarget::User(target) => {
@@ -233,9 +254,9 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                             let msg_target = MsgTarget::Server { serv };
                             ui.add_privmsg(serv, &msg, ts, &msg_target, false, is_action);
                             if target == client.get_nick() {
-                                ui.set_tab_style(TabStyle::Highlight, &msg_target);
+                                tab_style_mention(ui, ts, &msg_target);
                             } else {
-                                ui.set_tab_style(TabStyle::NewMsg, &msg_target);
+                                tab_style_new_msg(ui, ts, &msg_target);
                             }
                         }
                         User { ref nick, .. } | Ambiguous(ref nick) => {
@@ -248,7 +269,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                                     MsgTarget::User { serv, nick }
                                 };
                                 ui.add_privmsg(nick, &msg, ts, &msg_target, false, is_action);
-                                ui.set_tab_style(TabStyle::Highlight, &msg_target);
+                                tab_style_mention(ui, ts, &msg_target);
                             } else {
                                 // PRIVMSG not sent to us. This case can happen in a few cases:
                                 //
@@ -283,7 +304,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                                             false,
                                             is_action,
                                         );
-                                        ui.set_tab_style(TabStyle::Highlight, &msg_target);
+                                        tab_style_mention(ui, ts, &msg_target);
                                     }
                                     User { ref nick, .. } | Ambiguous(ref nick) => {
                                         if nick == &client.get_nick() {
@@ -306,7 +327,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                                             // Don't highlight the tab as `Highlight`: the message was sent by us so
                                             // the tab probably doesn't need that much attention. Highlight as `NewMsg`
                                             // instead.
-                                            ui.set_tab_style(TabStyle::NewMsg, &msg_target);
+                                            tab_style_new_msg(ui, ts, &msg_target);
                                         } else {
                                             // Case (2)
                                             let msg_target = MsgTarget::User { serv, nick };
@@ -318,7 +339,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                                                 false,
                                                 is_action,
                                             );
-                                            ui.set_tab_style(TabStyle::Highlight, &msg_target);
+                                            tab_style_mention(ui, ts, &msg_target);
                                         }
                                     }
                                 };
@@ -558,7 +579,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
                     Some(Server(msg_serv)) | Some(Ambiguous(msg_serv)) => {
                         let msg_target = MsgTarget::Server { serv };
                         ui.add_privmsg(&msg_serv, &params.join(" "), ts, &msg_target, false, false);
-                        ui.set_tab_style(TabStyle::NewMsg, &msg_target);
+                        tab_style_new_msg(ui, ts, &msg_target);
                     }
                     Some(User { .. }) | None => {
                         debug!(
@@ -574,7 +595,7 @@ fn handle_irc_msg(ui: &UI, client: &dyn Client, msg: wire::Msg) {
             Some(Server(msg_serv)) => {
                 let msg_target = MsgTarget::Server { serv };
                 ui.add_privmsg(&msg_serv, &params.join(" "), ts, &msg_target, false, false);
-                ui.set_tab_style(TabStyle::NewMsg, &msg_target);
+                tab_style_new_msg(ui, ts, &msg_target);
             }
             Some(User { .. }) | Some(Ambiguous(_)) | None => {
                 debug!(
